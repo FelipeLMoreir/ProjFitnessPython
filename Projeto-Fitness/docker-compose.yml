@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  db-usuarios:
+    image: mongo:latest
+    container_name: db-usuarios
+    ports:
+      - "27019:27017" 
+    volumes:
+      - mongo-usuarios-data:/data/db
+    networks:
+      - academia-network
+
+  db-treinos:
+    image: mongo:latest
+    container_name: db-treinos
+    ports:
+      - "27018:27017" 
+    volumes:
+      - mongo-treinos-data:/data/db
+    networks:
+      - academia-network
+
+  api-usuarios:
+    build: ./api-usuarios
+    container_name: api-usuarios
+    ports:
+      - "5001:5000"
+    environment:
+      - MONGO_URI=mongodb://db-usuarios:27017/db_usuarios
+      - API_TREINO_URL=http://api-treino:5000   
+    depends_on:
+      - db-usuarios
+    networks:
+      - academia-network
+
+  api-treino:
+    build: ./api-treino
+    container_name: api-treino
+    ports:
+      - "5002:5000"
+    environment:
+      - MONGO_URI=mongodb://db-treinos:27017/db_treinos
+      - API_USUARIOS_URL=http://api-usuarios:5000 
+    depends_on:
+      - db-treinos
+      - api-usuarios
+    networks:
+      - academia-network
+
+  api-rotina:
+    build: ./api-rotina
+    container_name: api-rotina
+    ports:
+      - "5003:5000"
+    environment:
+      - API_USUARIOS_URL=http://api-usuarios:5000 
+      - API_TREINO_URL=http://api-treino:5000     
+    depends_on:
+      - api-usuarios
+      - api-treino
+    networks:
+      - academia-network
+
+networks:
+  academia-network:
+    driver: bridge
+
+volumes:
+  mongo-usuarios-data:
+  mongo-treinos-data:
